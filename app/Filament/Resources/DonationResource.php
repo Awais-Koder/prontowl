@@ -20,26 +20,23 @@ use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use App\Services\StripePaymentService;
-
+use App\Exceptions\CampaignNotFoundException;
+use Filament\Forms\Components\Fieldset;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 class DonationResource extends Resource
 {
     protected static ?string $model = Donation::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    public ?string $tip_percentage_other = null;
-    public ?string $tip_percentage = null;
-    public ?string $message = null;
-    public ?string $donation_amount = null;
-    public ?string $donation_type = null;
-    public ?string $donor_email = null;
-    public ?string $donor_name = null;
-    public ?bool $anonymous = null;
-    public ?bool $opt_out_tip = null;
+    protected static bool $canCreateAnother = false;
     public static function form(Form $form): Form
     {
-        $campaignId = Session::get('campaign_data');
-        if (empty($campaignId)) {
-            return redirect()->back();
+        $campaignId = 0;
+        if (Session::has('campaign_data')) { // Check if the session key exists
+            $campaignId = Session::get('campaign_data'); // Retrieve the campaign data
+            if (empty($campaignId)) { // Check if the value is empty
+                throw new CampaignNotFoundException('Campaign not found.');
+            }
         }
         $campaign = Campaign::find($campaignId, ['title', 'purpose', 'id', 'used_in', 'description', 'funding_goal']);
 
@@ -50,21 +47,37 @@ class DonationResource extends Resource
                         ->completedIcon('heroicon-m-hand-thumb-up')
                         ->icon('heroicon-o-megaphone')
                         ->schema([
+                            Fieldset::make('Campaign Details')
+                                ->relationship('campaign')
+                                ->schema([
+                                    Forms\Components\TextInput::make('title'),
+                                    Forms\Components\TextInput::make('funding_goal'),
+                                    Forms\Components\Textarea::make('description')
+                                    ->formatStateUsing(fn ($state) => strip_tags($state))
+                                    ->rows(10)
+                                    ->columnSpanFull(),
+                                ])
+                                ->hidden(fn() => Session::has('campaign_data')),
                             Forms\Components\View::make('text')
                                 ->viewData([
-                                    'text' => $campaign->title,
-                                    'label' => 'Campaign Title',
-                                ]),
+                                    'text' => $campaign->title ?? 'Not Found', // Dynamically fetch the campaign title
+                                    'label' => 'Campaign Title', // Static label
+                                ])
+                                ->hidden(fn() => !Session::has('campaign_data')),
                             Forms\Components\View::make('text')
                                 ->viewData([
-                                    'text' => $campaign->funding_goal,
-                                    'label' => 'Campaign Goal',
-                                ]),
+                                    'text' => $campaign->funding_goal ?? 'Not Found',
+                                    'label' => 'Campaign Goal' ?? 'Not Found',
+                                ])
+                                ->hidden(fn() => !Session::has('campaign_data')),
                             Forms\Components\View::make('text')
                                 ->viewData([
-                                    'text' => $campaign->description,
-                                    'label' => 'Campaign Description',
-                                ])->columnSpanFull(),
+                                    'text' => $campaign->description ?? 'Not Found',
+                                    'label' => 'Campaign Description' ?? 'Not Found',
+                                ])
+                                ->hidden(fn() => !Session::has('campaign_data'))
+                                ->columnSpanFull()
+
                         ])->columns(2),
                     Wizard\Step::make('Donor Information')
                         ->completedIcon('heroicon-m-hand-thumb-up')
@@ -152,7 +165,7 @@ class DonationResource extends Resource
                                             'opt_out_tip' => $get('opt_out_tip'),
                                             'anonymous' => $get('anonymous'),
                                         ];
-                                        Session::put('donation_user_data' , $data);
+                                        Session::put('donation_user_data', $data);
                                         // Get the selected donation type
                                         $donationType = $get('donation_type');
 
@@ -202,11 +215,13 @@ class DonationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('campaign_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('campaign.title')
+                    ->limit(10)
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('donor_name')
                     ->searchable(),
@@ -257,5 +272,37 @@ class DonationResource extends Resource
             'view' => Pages\ViewDonation::route('/{record}'),
             'edit' => Pages\EditDonation::route('/{record}/edit'),
         ];
+    }
+    public static function canViewAny(): bool
+    {
+        // Disallow viewing
+        return true;
+    }
+    public static function canCreate(): bool
+    {
+        // Allow creation without login
+        return true; // Or add custom conditions
+    }
+
+    public static function canEdit($record): bool
+    {
+        // Disallow editing
+        return auth()->check() && auth()->user()->hasRole('Admin');
+    }
+
+    public static function canDelete($record): bool
+    {
+        // Disallow deletion
+        return auth()->check() && auth()->user()->hasRole('Admin');
+    }
+
+    public static function canView($record): bool
+    {
+        // Disallow viewing individual records
+        return auth()->check() && auth()->user()->hasRole('Admin');
+    }
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('campaign');
     }
 }

@@ -12,7 +12,10 @@ use App\Services\StripePaymentService;
 class CreateDonation extends CreateRecord
 {
     protected static string $resource = DonationResource::class;
-
+    protected function getFormActions(): array
+    {
+        return [];
+    }
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $campaignId = Session::get('campaign_data');

@@ -18,15 +18,16 @@ class HomeController extends Controller
         $data = Session::get('donation_user_data');
         $campaignId = Session::get('campaign_data');
         $data['campaign_id'] = $campaignId;
-        if (!empty($data['donation_type']) != 'custom') {
-            $data['amount'] = !empty($data['donation_type']);
+        if ($data['donation_type'] !== 'custom') {
+            $data['amount'] = $data['donation_type']; // Use the selected type as amount
         } else {
-            $data['amount'] = !empty($data['donation_amount']);
+            $data['amount'] = $data['donation_amount']; // Use the custom amount
         }
-        if (!empty($data['tip_percentage']) != 'custom') {
-        } else {
-            $data['tip_percentage'] = !empty($data['tip_percentage_other']);
+
+        if ($data['tip_percentage'] === 'custom') {
+            $data['tip_percentage'] = $data['tip_percentage_other']; // Use custom tip percentage
         }
+
         unset($data['donation_type'], $data['donation_amount'], $data['tip_percentage_other']);
         Donation::create($data);
         Notification::make()

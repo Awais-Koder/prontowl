@@ -208,9 +208,31 @@ class CampaignResource extends Resource
                     ->modalDescription('Boost your campaign by sharing this link on social media and inspire more support!')
                     ->form([
                         Forms\Components\TextInput::make('Link')
-                        // ->default(fn(Campaign $record) =>route('campaign.share', ['purpose' => $record->purpose , 'id'=> base64_encode($record->id)])),
-                        ->default(fn(Campaign $record) => config('app.url') . 'share/campaign/' . urlencode($record->purpose) . '/' . base64_encode( $record->id))
+                            ->default(fn(Campaign $record) => config('app.url') . 'share/campaign/' . urlencode($record->purpose) . '/' . base64_encode($record->id)),
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('WhatsApp')
+                                ->label('WhatsApp')
+                                ->color('success')
+                                ->size('sm')
+                                ->icon('heroicon-o-share')
+                                ->url(fn(Campaign $record) => 'https://wa.me/?text=' . urlencode('Check out this campaign: ' . config('app.url') . 'share/campaign/' . urlencode($record->purpose) . '/' . base64_encode($record->id)))
+                                ->openUrlInNewTab(),
+                            Forms\Components\Actions\Action::make('Facebook')
+                                ->label('Facebook')
+                                ->color('blue')
+                                ->size('sm')
+                                ->icon('heroicon-o-share')
+                                ->url(fn(Campaign $record) => 'https://www.facebook.com/sharer/sharer.php?u=' . urlencode(config('app.url') . 'share/campaign/' . urlencode($record->purpose) . '/' . base64_encode($record->id)))
+                                ->openUrlInNewTab(),
+                            Forms\Components\Actions\Action::make('Twitter')
+                                ->label('Twitter')
+                                ->color('indigo')
+                                ->icon('heroicon-o-share')
+                                ->size('sm')
+                                ->url(fn(Campaign $record) => 'https://twitter.com/intent/tweet?text=' . urlencode('Check out this campaign: ') . '&url=' . urlencode(config('app.url') . 'share/campaign/' . urlencode($record->purpose) . '/' . base64_encode($record->id)))
 
+                                ->openUrlInNewTab(),
+                        ])
                     ])
                 ,
                 Tables\Actions\Action::make('Video Url')
@@ -240,6 +262,7 @@ class CampaignResource extends Resource
             'index' => Pages\ListCampaigns::route('/'),
             'create' => Pages\CreateCampaign::route('/create'),
             'edit' => Pages\EditCampaign::route('/{record}/edit'),
+            'view' => Pages\ViewCampaign::route('/{record}'),
         ];
     }
 

@@ -28,6 +28,11 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    'stripe' => [
+        'stripe_secret_key' => env('STRIPE_SECRET_KEY'),
+        'stripe_public_key' => env('STRIPE_PUBLIC_KEY'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

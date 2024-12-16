@@ -9,11 +9,10 @@ class StripePaymentService
 {
     public function __construct()
     {
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+       Stripe::setApiKey(config('services.stripe.stripe_secret_key'));
     }
     public function createCheckoutSession($amount, $currency = 'usd')
     {
-
         return Session::create([
             'payment_method_types' => ['card'], // Can include other types like 'alipay'
             'line_items' => [

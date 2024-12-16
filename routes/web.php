@@ -13,6 +13,8 @@ Route::get('/', function () {
 Route::get('share/campaign/{purpose}/{id}', [HomeController::class, 'index'])->name('sahred.campaign');
 Route::get('/payment-success',[HomeController::class, 'paymentSuccess'])->name('payment.success');
 
+// Route::get('admin/donations')->name('filament.admin.pages.dashboard');
+
 Route::get('/payment-cancel', function () {
     Notification::make()
         ->title('Payment Unsuccessfull')
