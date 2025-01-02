@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AddWidgetsMiddleware;
 use App\Http\Middleware\AuthCheckMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'auth-check' => AuthCheckMiddleware::class
+            'auth-check' => AuthCheckMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

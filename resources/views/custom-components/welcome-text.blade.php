@@ -1,0 +1,1 @@
+<p>Welcome , @if(Auth::check()) {{Auth::user()->name}} @endif </p>

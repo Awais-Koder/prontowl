@@ -2,8 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\CampaignResource\Widgets\RecentCampaigns;
+use App\Filament\Resources\UserResource\Widgets\UserBalance;
 use App\Http\Middleware\AuthCheckMiddleware;
-use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
@@ -19,8 +20,12 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use Outerweb\FilamentImageLibrary\Filament\Plugins\FilamentImageLibraryPlugin;
+use App\Filament\Resources\CampaignResource\Widgets\CampaignWidget;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use App\Filament\Widgets\TransactionHistory;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -35,6 +40,8 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
                 'blue' => Color::Blue,
                 'indigo' => Color::Indigo,
+                'red' => Color::Red,
+                'green' => Color::Green,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -43,8 +50,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                UserBalance::class,
+                CampaignWidget::class,
+                TransactionHistory::class,
+                RecentCampaigns::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
@@ -65,13 +74,11 @@ class AdminPanelProvider extends PanelProvider
     }
     public function boot()
     {
-        // parent::boot();
-
         Filament::serving(function () {
             if (request()->routeIs('filament.admin.resources.donations.create')) {
                 if (!auth()->check()) {
                     echo
-                    '<style>
+                        '<style>
                 .fi-sidebar {
                     display: none !important;
                     }
@@ -79,8 +86,16 @@ class AdminPanelProvider extends PanelProvider
                 }
             }
         });
-    }
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::PAGE_HEADER_WIDGETS_BEFORE,
+            fn() => view('custom-components.dashboard-buttons'),
+        );
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::PAGE_HEADER_ACTIONS_AFTER,
+            fn() => view('custom-components.welcome-text'),
+        );
 
+    }
 
 }
 

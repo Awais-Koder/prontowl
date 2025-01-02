@@ -275,34 +275,6 @@ class DonationResource extends Resource
     }
     public static function canViewAny(): bool
     {
-        // Disallow viewing
-        return true;
-    }
-    public static function canCreate(): bool
-    {
-        // Allow creation without login
-        return true; // Or add custom conditions
-    }
-
-    public static function canEdit($record): bool
-    {
-        // Disallow editing
         return auth()->check() && auth()->user()->hasRole('Admin');
-    }
-
-    public static function canDelete($record): bool
-    {
-        // Disallow deletion
-        return auth()->check() && auth()->user()->hasRole('Admin');
-    }
-
-    public static function canView($record): bool
-    {
-        // Disallow viewing individual records
-        return auth()->check() && auth()->user()->hasRole('Admin');
-    }
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->with('campaign');
     }
 }

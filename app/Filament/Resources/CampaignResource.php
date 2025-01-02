@@ -21,7 +21,11 @@ class CampaignResource extends Resource
     protected static ?string $navigationGroup = 'Campaigns';
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        if(auth()->user()->hasRole('Admin')) {
+            return static::getModel()::count();
+        }else{
+            return static::getModel()::where('user_id' , auth()->id())->count();
+        }
     }
     public static function form(Form $form): Form
     {
@@ -122,8 +126,9 @@ class CampaignResource extends Resource
                     ->native(false)
                     ->required(),
                 Forms\Components\TextInput::make('funding_goal')
-                    ->placeholder('Enter Funding Goal Here')
-                    ->maxLength(255),
+                ->label('Funding Goal ($)')
+                    ->numeric()
+                    ->placeholder('Enter Funding Goal Here'),
                 Forms\Components\TextInput::make('location')
                     ->placeholder('Enter Location Here')
                     ->maxLength(255),
@@ -277,6 +282,6 @@ class CampaignResource extends Resource
     }
     public static function canViewAny(): bool
     {
-        return auth()->check();
+        return auth()->check() && auth()->user()->hasRole(['Admin','Backer' , 'User' , 'Organization']);
     }
 }

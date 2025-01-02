@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
         Role::create(['name' => 'Admin']);
         Role::create(['name' => 'User']);
         Role::create(['name' => 'Backer']);
-        $user = User::find(1);
-        $user->assignRole('Admin');
+        Role::create(['name' => 'Organization']);
     }
 }
