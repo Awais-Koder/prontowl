@@ -6,49 +6,73 @@ use EightyNine\FilamentAdvancedWidget\AdvancedChartWidget;
 use App\Models\Campaign;
 use App\Models\Donation;
 use Carbon\Carbon;
-
 class CampaignWidget extends AdvancedChartWidget
 {
     protected static ?string $heading = 'Campaigns & Donations';
     protected int|string|array $columnSpan = '1';
     protected static ?int $sort = 2;
-
+    const FILTER_7_DAYS = '7days';
+    const FILTER_1_MONTH = '1month';
+    const FILTER_3_MONTHS = '3months';
+    const FILTER_6_MONTHS = '6months';
+    const FILTER_1_YEAR = '1year';
+    const FILTER_ALL_TIME = 'all';
+    public ?string $filter = self::FILTER_7_DAYS;
+    protected function getFilters(): ?array
+    {
+        return [
+            self::FILTER_7_DAYS => 'Last 7 Days',
+            self::FILTER_1_MONTH => 'Last Month',
+            self::FILTER_3_MONTHS => 'Last 3 Months',
+            self::FILTER_6_MONTHS => 'Last 6 Months',
+            self::FILTER_1_YEAR => 'Last Year',
+            self::FILTER_ALL_TIME => 'All Time',
+        ];
+    }
+    protected function getStartDate(): Carbon
+    {
+        return match ($this->filter) {
+            self::FILTER_7_DAYS => now()->subDays(7),
+            self::FILTER_1_MONTH => now()->subMonth(),
+            self::FILTER_3_MONTHS => now()->subMonths(3),
+            self::FILTER_6_MONTHS => now()->subMonths(6),
+            self::FILTER_1_YEAR => now()->subYear(),
+            self::FILTER_ALL_TIME => Carbon::createFromTimestamp(0),
+            default => now()->subDays(7),
+        };
+    }
     protected function getData(): array
     {
-        $labels = [];
-        $campaignData = [];
-        $donationData = [];
+        $startDate = $this->getStartDate();
 
         if (auth()->user()->hasRole('Admin')) {
-            // Fetch campaign data
-            $campaigns = Campaign::select('created_at')
+            $campaigns = Campaign::where('created_at', '>=', $startDate)
+                ->select('created_at')
                 ->get()
                 ->groupBy(function ($date) {
                     return Carbon::parse($date->created_at)->format('Y-m-d');
                 });
 
-            // Fetch donation data
-            $donations = Donation::select('created_at')
+            $donations = Donation::where('created_at', '>=', $startDate)
+                ->select('created_at')
                 ->get()
                 ->groupBy(function ($date) {
                     return Carbon::parse($date->created_at)->format('Y-m-d');
                 });
         } else {
-            // Fetch user specific campaign data
-            $campaigns = Campaign::select('created_at')
+            $campaigns = Campaign::where('created_at', '>=', $startDate)
                 ->where('user_id', auth()->id())
+                ->select('created_at')
                 ->get()
                 ->groupBy(function ($date) {
                     return Carbon::parse($date->created_at)->format('Y-m-d');
                 });
 
-            // Fetch user specific donation data
-            $donations = Donation::select('created_at')
-                ->where('campaign_id', function ($query) {
-                    $query->select('id')
-                        ->from('campaigns')
-                        ->where('user_id', auth()->id());
+            $donations = Donation::where('created_at', '>=', $startDate)
+                ->whereHas('campaign', function ($query) {
+                    $query->where('user_id', auth()->id());
                 })
+                ->select('created_at')
                 ->get()
                 ->groupBy(function ($date) {
                     return Carbon::parse($date->created_at)->format('Y-m-d');
@@ -65,7 +89,7 @@ class CampaignWidget extends AdvancedChartWidget
         foreach ($allDates as $date) {
             $labels[] = $date;
             $campaignData[] = isset($campaigns[$date]) ? $campaigns[$date]->count() : 0;
-            $donationData[] = isset($donations[$date]) ? $donations[$date]->count() : 0;
+            $donationData[] = isset($donations[$date]) ? $donations[$date]->sum('amount') : 0;
         }
 
         return [

@@ -74,18 +74,6 @@ class AdminPanelProvider extends PanelProvider
     }
     public function boot()
     {
-        Filament::serving(function () {
-            if (request()->routeIs('filament.admin.resources.donations.create')) {
-                if (!auth()->check()) {
-                    echo
-                        '<style>
-                .fi-sidebar {
-                    display: none !important;
-                    }
-                </style>';
-                }
-            }
-        });
         FilamentView::registerRenderHook(
             PanelsRenderHook::PAGE_HEADER_WIDGETS_BEFORE,
             fn() => view('custom-components.dashboard-buttons'),
@@ -94,7 +82,6 @@ class AdminPanelProvider extends PanelProvider
             PanelsRenderHook::PAGE_HEADER_ACTIONS_AFTER,
             fn() => view('custom-components.welcome-text'),
         );
-
     }
 
 }

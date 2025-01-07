@@ -55,4 +55,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transaction::class , 'user_id');
     }
+    public function level()
+    {
+        return $this->hasOne(Level::class , 'user_id');
+    }
 }
